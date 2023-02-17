@@ -215,12 +215,13 @@ class Import_Ics_Admin {
 				'id' => 'import_ics_setting_1_interval',
 				'name' => 'import_ics_setting_1_interval',
 				'select_options' => array(
-					10 => "2 Minutes",
-					3600 => "1 hour",
-					7200 => "2 hours",
-					43200 => "12 hours",
-					86400 => "24 hours"
+					'2' =>  'development',
+					'3600' => esc_html__('1 Hour', 'import-ics'),
+					'7200' => esc_html__('2 Hours', 'import-ics'),
+					'43200' => esc_html__('12 Hours', 'import-ics'),
+					'86400' => esc_html__('24 Hours', 'import-ics'),
 				),
+				'default_option' => '43200',
 				'value_type'=>'normal',
 				'wp_data' => 'option',
 				'required' => true,
@@ -287,6 +288,9 @@ class Import_Ics_Admin {
 					break;
 			case 'select':
 				$value = ($args['value_type'] == 'serialized') ? serialize($wp_data_value) : $wp_data_value;
+				if (empty($value)) {
+					$value = $args['default_option'];
+				}
 				echo '<select name="' . $args['name'] . '" id="' . $args['id'] . '">';
 				foreach ($args['select_options'] as $key => $option) {
 					if ($value == $key) {
