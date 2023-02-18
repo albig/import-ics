@@ -114,6 +114,7 @@ class Import_Ics_Event_Manager {
 	 * @since    1.0.0
 	 */
 	private function import_ics_event_manager($ical) {
+		global $wpdb;
 
 		$updated_events = 0;
 
@@ -144,63 +145,63 @@ class Import_Ics_Event_Manager {
 				$updated_events++;
 			}
 
-			// use original date if no hours are given, else timezoned
-			$startdate = (strlen($event->dtstart) == 8) ? $event->dtstart : $event->dtstart_tz;
-			$enddate = (strlen($event->dtend) == 8) ? $event->dtend : $event->dtend_tz;
+			$event_summary = [];
+			// we use the EM_DateTime object from event manager
+			$em_start_datetime = new EM_DateTime($ical->iCalDateToUnixTimestamp($event->dtstart));
+			$em_end_datetime = new EM_DateTime($ical->iCalDateToUnixTimestamp($event->dtend));
+
+			$event_summary['startDateTime'] = $em_start_datetime;
+			if (strlen($event->dtstart) == 8 && strlen($event->dtend) == 8) {
+				$event_summary['isAllDay'] = true;
+			} else {
+				$event_summary['isAllDay'] = false;
+			}
+			$event_summary['endDateTime'] = $em_end_datetime;
 
 			$post = array(
 				'ID' => $wp_id,
 				'post_type' => 'event',
 				'post_title' => $event->summary,
-				'post_content' => sprintf('<!-- wp:paragraph -->%s<!-- /wp:paragraph -->', nl2br($event->description)),
+				'post_content' => sprintf('<!-- wp:paragraph -->%s<!-- /wp:paragraph -->', nl2br($event->description ?? '')),
 				'post_status' => 'publish',
 			);
 
-			$id = wp_insert_post((array) $post, true);
+			$inserted_post_id = wp_insert_post((array) $post, true);
 
-			if (! is_int($id) ) {
-				echo 'Could not copy post';
+			if (is_wp_error($inserted_post_id)) {
 				return false;
 			}
 
-			$ids_from_remote[] = $id;
+			$ids_from_remote[] = $inserted_post_id;
 
-			// we use the EM_DateTime object from event manager
-			$EM_DateTime = new EM_DateTime(current_time('timestamp'));
+			update_post_meta($inserted_post_id, '_event_timezone', 'Europe/Berlin');
 
-			update_post_meta($id, '_event_timezone', 'Europe/Berlin');
+			update_post_meta($inserted_post_id, '_event_start', $event_summary['startDateTime']->getDateTime(true));
+			update_post_meta($inserted_post_id, '_event_start_date', $event_summary['startDateTime']->getDate());
+			update_post_meta($inserted_post_id, '_event_start_time', ($event_summary['isAllDay'] ? '00:00:00' : $event_summary['startDateTime']->getTime()),);
+			update_post_meta($inserted_post_id, '_event_start_local', $event_summary['startDateTime']->getDateTime());
 
-			// $startDateTimeTS = $ical->iCalDateToUnixTimestamp($startdate);
-			$EM_DateTime->setTimestamp($ical->iCalDateToUnixTimestamp($event->dtstart));
-			update_post_meta($id, '_event_start', $EM_DateTime->getDateTime(true));
-			update_post_meta($id, '_event_start_date', $EM_DateTime->getDate());
-			update_post_meta($id, '_event_start_time', $EM_DateTime->getTime());
-			update_post_meta($id, '_event_start_local', $EM_DateTime->getDateTime());
+			update_post_meta($inserted_post_id, '_event_end', $event_summary['endDateTime']->getDateTime(true));
+			update_post_meta($inserted_post_id, '_event_end_date', $event_summary['endDateTime']->getDate());
+			update_post_meta($inserted_post_id, '_event_end_time', $event_summary['isAllDay'] ? '23:59:59' : $event_summary['endDateTime']->getTime());
+			update_post_meta($inserted_post_id, '_event_end_local', $event_summary['endDateTime']->getDateTime());
 
-			if (strlen($event->dtstart) == 8 && strlen($event->dtend) == 8) {
-				$EM_DateTime->setTimestamp($ical->iCalDateToUnixTimestamp($event->dtend) - 1);
-				update_post_meta($id, '_event_all_day', true);
-				update_post_meta($id, '_event_start_time', '00:00:00');
-			} else {
-				$EM_DateTime->setTimestamp($ical->iCalDateToUnixTimestamp($event->dtend));
+			update_post_meta($inserted_post_id, '_importics_event_uid', $uid);
+
+			if ($event_summary['isAllDay'] == true) {
+				update_post_meta($inserted_post_id, '_event_all_day', 1);
+				update_post_meta($inserted_post_id, '_event_start_time', '00:00:00');
 			}
 
-			update_post_meta($id, '_event_end', $EM_DateTime->getDateTime(true));
-			update_post_meta($id, '_event_end_date', $EM_DateTime->getDate());
-			update_post_meta($id, '_event_end_time', $EM_DateTime->getTime());
-			update_post_meta($id, '_event_end_local', $EM_DateTime->getDateTime());
-
-			update_post_meta($id, '_importics_event_uid', $uid);
-
 			// if ( isset( $event->location ) ) {
-			// 	update_post_meta( $id, '_sunflower_event_location_name', $event->location );
+			// 	update_post_meta( $inserted_post_id, '_sunflower_event_location_name', $event->location );
 			// 	$coordinates = sunflower_geocode( $event->location );
 			// 	if ( $coordinates ) {
 			// 		list($lon, $lat) = $coordinates;
-			// 		update_post_meta( $id, '_sunflower_event_lat', $lat );
-			// 		update_post_meta( $id, '_sunflower_event_lon', $lon );
+			// 		update_post_meta( $inserted_post_id, '_sunflower_event_lat', $lat );
+			// 		update_post_meta( $inserted_post_id, '_sunflower_event_lon', $lon );
 			// 		$zoom = sunflower_get_constant( 'SUNFLOWER_EVENT_IMPORTED_ZOOM' ) ?: 12;
-			// 		update_post_meta( $id, '_sunflower_event_zoom', $zoom );
+			// 		update_post_meta( $inserted_post_id, '_sunflower_event_zoom', $zoom );
 			// 	}
 			// }
 
@@ -208,7 +209,46 @@ class Import_Ics_Event_Manager {
 			//$categories .= ( $auto_categories ) ? ',' . $auto_categories : '';
 
 			if ($categories) {
-				wp_set_post_terms( $id, $categories, 'importics_event_tag' );
+				wp_set_post_terms($inserted_post_id, $categories, 'importics_event_tag');
+			}
+
+			// write post / event into Events Manager custom table
+			$inserted_event = get_post($inserted_post_id);
+			if (empty($inserted_event)) {
+				return false;
+			}
+
+			// Custom table Details
+			$event_array = array(
+				'post_id' 		   	=> $inserted_post_id,
+				'event_slug' 	   	=> $inserted_event->post_name,
+				'event_owner' 	   	=> $inserted_event->post_author,
+				'event_name'       	=> $inserted_event->post_title,
+				'event_start_time' 	=> $event_summary['isAllDay'] ? '00:00:00' : $event_summary['startDateTime']->getTime(),
+				'event_end_time'   	=> $event_summary['isAllDay'] ? '23:59:59' : $event_summary['endDateTime']->getTime(),
+				'event_all_day'    	=> $event_summary['isAllDay'],
+				'event_start'		=> $event_summary['startDateTime']->getDateTime(true),
+				'event_end'		   	=> $event_summary['endDateTime']->getDateTime(true),
+				'event_timezone'	=> 'UTC',
+				'event_start_date' 	=> $event_summary['startDateTime']->getDate(),
+				'event_end_date'   	=> $event_summary['endDateTime']->getDate(),
+				'post_content' 	   	=> $inserted_event->post_content,
+				'location_id' 	   	=> $location_id,
+				'event_status' 	   	=> ($inserted_event->post_status == 'publish' ? 1 : 0),
+				'event_date_created'=> $inserted_event->post_date,
+			);
+
+			$event_table = $wpdb->prefix . 'em_events';
+
+			// check for already existing event
+			$event_count = $wpdb->get_var('SELECT COUNT(*) FROM `' . $event_table . '` WHERE `post_id` = ' . absint($inserted_post_id));
+			if ($event_count > 0 && is_numeric($event_count)) {
+				$where = array('post_id' => absint($inserted_post_id));
+				$wpdb->update($event_table, $event_array, $where);
+			} else {
+				if ($wpdb->insert($event_table, $event_array)) {
+					update_post_meta($inserted_post_id, '_event_id', $wpdb->insert_id);
+				}
 			}
 
 		}
