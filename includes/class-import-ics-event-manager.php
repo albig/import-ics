@@ -24,9 +24,9 @@ class Import_Ics_Event_Manager {
 	// The Events Calendar Event Posttype
 	protected $event_posttype;
 
-	// filter for events 2 weeks < now < 1 year
-	protected $filterDaysAfter = 366;
+	// Current timeframe of consideration: 2 weeks < now < 1 year
 	protected $filterDaysBefore = 15;
+	protected $filterDaysAfter = 366;
 
 	/**
 	 * Initialize the class and set its properties.
@@ -55,6 +55,7 @@ class Import_Ics_Event_Manager {
 	 * @since    1.0.0
 	 */
 	public function handle_import_form_submit() {
+		global $wpdb;
 
 		// if background job already scheduled - skip
 		if (get_transient('import_ics_event_manager_done')) {
@@ -97,14 +98,20 @@ class Import_Ics_Event_Manager {
 		}
 
 		$response = $this->import_ics_event_manager($ical);
-		$ids_from_remote = $response[0];
+		$ids_from_remote = $response[0] ?? [];
 
 		$local_events_having_uid = $this->events_having_uid();
 
 		// move all local events into trash which have been deleted on remote side
 		$deleted_on_remote = array_diff($local_events_having_uid, $ids_from_remote);
 		foreach ($deleted_on_remote as $to_be_deleted) {
+			// move posts into trash
 			wp_trash_post($to_be_deleted);
+
+			// mark wp event manager events as trash
+			$event_array = array('event_status' => -1);
+			$where = array('post_id' => absint($to_be_deleted));
+			$rest = $wpdb->update($wpdb->prefix . 'em_events', $event_array, $where);
 		}
 	}
 
@@ -273,6 +280,11 @@ class Import_Ics_Event_Manager {
 		);
 	}
 
+	/**
+	 * Get all post ids of imported events in the current time frame.
+	 *
+	 * @since    1.0.0
+	 */
 	private function events_having_uid() {
 		$events_with_uid = new WP_Query(
 			array(
@@ -280,27 +292,35 @@ class Import_Ics_Event_Manager {
 				'post_type' => 'event',
 				'meta_key' => '_importics_event_uid',
 				'orderby' => 'meta_value',
-				'date_query' => array(
-					array(
-						'after' => (new \DateTime('now'))->sub(new \DateInterval('P' . $this->filterDaysBefore . 'D'))->format('Y-m-d'),
-						'before' => (new \DateTime('now'))->add(new \DateInterval('P' . $this->filterDaysAfter . 'D'))->format('Y-m-d')
-					)
-				),
 				'meta_query' => array(
+					'relation' => 'AND',
 					array(
 						'key' => '_importics_event_uid',
 						'compare' => 'EXISTS',
+					),
+					array(
+						'key' => '_event_start',
+						'value' => (new \DateTime('now'))->sub(new \DateInterval('P' . $this->filterDaysBefore . 'D'))->format('Y-m-d H:m:i'),
+						'compare' => '>',
+						'type' => 'DATETIME',
+					),
+					array(
+						'key' => '_event_end',
+						'value' => (new \DateTime('now'))->add(new \DateInterval('P' . $this->filterDaysAfter . 'D'))->format('Y-m-d H:m:i'),
+						'compare' => '<',
+						'type' => 'DATETIME',
 					),
 				),
 			)
 		);
 
 		$ids = array();
-		while ( $events_with_uid->have_posts() ) {
-			$events_with_uid->the_post();
-			$ids[] = get_the_ID();
+		if ($events_with_uid) {
+			while ($events_with_uid->have_posts()) {
+				$events_with_uid->the_post();
+				$ids[] = get_the_ID();
+			}
 		}
-
 		return $ids;
 	}
 
