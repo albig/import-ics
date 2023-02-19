@@ -221,7 +221,7 @@ class Import_Ics_Admin {
 					'43200' => esc_html__('12 Hours', 'import-ics'),
 					'86400' => esc_html__('24 Hours', 'import-ics'),
 				),
-				'default_option' => '43200',
+				'default' => '43200',
 				'value_type'=>'normal',
 				'wp_data' => 'option',
 				'required' => true,
@@ -232,6 +232,59 @@ class Import_Ics_Admin {
 			'import_ics_general_settings',
 			'import_ics_setting_1_interval'
 		);
+
+		// import_ics_setting_interval_before
+		add_settings_field(
+			'import_ics_setting_interval_before',
+			esc_html__('Time interval: days before today', 'import-ics'),
+			array($this, 'import_ics_render_settings_field'),
+			'import_ics_general_settings',
+			'import_ics_general_section',
+			array (
+				'type' => 'input',
+				'subtype' => 'text',
+				'id' => 'import_ics_setting_interval_before',
+				'name' => 'import_ics_setting_interval_before',
+				'default' => '15',
+				'get_options_list' => '',
+				'value_type'=>'normal',
+				'wp_data' => 'option',
+				'required' => true,
+				'size' => 5
+			)
+		);
+
+		register_setting(
+			'import_ics_general_settings',
+			'import_ics_setting_interval_before'
+		);
+
+		// import_ics_setting_interval_after
+		add_settings_field(
+			'import_ics_setting_interval_after',
+			esc_html__('Time interval: days after today', 'import-ics'),
+			array($this, 'import_ics_render_settings_field'),
+			'import_ics_general_settings',
+			'import_ics_general_section',
+			array (
+				'type' => 'input',
+				'subtype' => 'text',
+				'id' => 'import_ics_setting_interval_after',
+				'name' => 'import_ics_setting_interval_after',
+				'default' => '366',
+				'get_options_list' => '',
+				'value_type'=>'normal',
+				'wp_data' => 'option',
+				'required' => true,
+				'size' => 5
+			)
+		);
+
+		register_setting(
+			'import_ics_general_settings',
+			'import_ics_setting_interval_after'
+		);
+
 	}
 
 
@@ -266,21 +319,23 @@ class Import_Ics_Admin {
 
 			case 'input':
 					$value = ($args['value_type'] == 'serialized') ? serialize($wp_data_value) : $wp_data_value;
+					if (empty($value) && isset($args['default'])) {
+						$value = $args['default'];
+					}
 					if ($args['subtype'] != 'checkbox') {
-							$prependStart = (isset($args['prepend_value'])) ? '<div class="input-prepend"> <span class="add-on">'.$args['prepend_value'].'</span>' : '';
-							$prependEnd = (isset($args['prepend_value'])) ? '</div>' : '';
-							$step = (isset($args['step'])) ? 'step="'.$args['step'].'"' : '';
-							$min = (isset($args['min'])) ? 'min="'.$args['min'].'"' : '';
-							$max = (isset($args['max'])) ? 'max="'.$args['max'].'"' : '';
-							$required = (isset($args['required'])) ? 'required="required"' : '';
-							if (isset($args['disabled'])) {
-									// hide the actual input bc if it was just a disabled input the info saved in the database would be wrong - bc it would pass empty values and wipe the actual information
-									echo $prependStart.'<input type="'.$args['subtype'].'" id="'.$args['id'].'_disabled" '.$step.' '.$max.' '.$min.' name="'.$args['name'].'_disabled" size="40" disabled value="' . esc_attr($value) . '" /><input type="hidden" id="'.$args['id'].'" '.$step.' '.$max.' '.$min.' name="'.$args['name'].'" size="40" value="' . esc_attr($value) . '" />'.$prependEnd;
-							} else {
-									echo $prependStart . '<input type="' . $args['subtype'] . '" id="' . $args['id'] . '" ' . $required . ' ' . $step . ' ' . $max . ' ' . $min . ' name="' . $args['name'] . '" size="' . ($args['size'] ?? '40') . '" value="' . esc_attr($value) . '" />' . $prependEnd;
-							}
-							/*<input required="required" '.$disabled.' type="number" step="any" id="'.$this->plugin_name.'_cost2" name="'.$this->plugin_name.'_cost2" value="' . esc_attr( $cost ) . '" size="25" /><input type="hidden" id="'.$this->plugin_name.'_cost" step="any" name="'.$this->plugin_name.'_cost" value="' . esc_attr( $cost ) . '" />*/
-
+						$prependStart = (isset($args['prepend_value'])) ? '<div class="input-prepend"> <span class="add-on">'.$args['prepend_value'].'</span>' : '';
+						$prependEnd = (isset($args['prepend_value'])) ? '</div>' : '';
+						$step = (isset($args['step'])) ? 'step="'.$args['step'].'"' : '';
+						$min = (isset($args['min'])) ? 'min="'.$args['min'].'"' : '';
+						$max = (isset($args['max'])) ? 'max="'.$args['max'].'"' : '';
+						$required = (isset($args['required'])) ? 'required="required"' : '';
+						if (isset($args['disabled'])) {
+								// hide the actual input bc if it was just a disabled input the info saved in the database would be wrong - bc it would pass empty values and wipe the actual information
+								echo $prependStart.'<input type="'.$args['subtype'].'" id="'.$args['id'].'_disabled" '.$step.' '.$max.' '.$min.' name="'.$args['name'].'_disabled" size="40" disabled value="' . esc_attr($value) . '" /><input type="hidden" id="'.$args['id'].'" '.$step.' '.$max.' '.$min.' name="'.$args['name'].'" size="40" value="' . esc_attr($value) . '" />'.$prependEnd;
+						} else {
+								echo $prependStart . '<input type="' . $args['subtype'] . '" id="' . $args['id'] . '" ' . $required . ' ' . $step . ' ' . $max . ' ' . $min . ' name="' . $args['name'] . '" size="' . ($args['size'] ?? '40') . '" value="' . esc_attr($value) . '" />' . $prependEnd;
+						}
+						/*<input required="required" '.$disabled.' type="number" step="any" id="'.$this->plugin_name.'_cost2" name="'.$this->plugin_name.'_cost2" value="' . esc_attr( $cost ) . '" size="25" /><input type="hidden" id="'.$this->plugin_name.'_cost" step="any" name="'.$this->plugin_name.'_cost" value="' . esc_attr( $cost ) . '" />*/
 					} else {
 							$checked = ($value) ? 'checked' : '';
 							echo '<input type="'.$args['subtype'].'" id="'.$args['id'].'" "' . $required . '" name="' . $args['name'] . '" size="' . ($args['size'] ?? '40') . '" value="1" '.$checked.' />';
@@ -288,8 +343,8 @@ class Import_Ics_Admin {
 					break;
 			case 'select':
 				$value = ($args['value_type'] == 'serialized') ? serialize($wp_data_value) : $wp_data_value;
-				if (empty($value)) {
-					$value = $args['default_option'];
+				if (empty($value) && isset($args['default'])) {
+					$value = $args['default'];
 				}
 				echo '<select name="' . $args['name'] . '" id="' . $args['id'] . '">';
 				foreach ($args['select_options'] as $key => $option) {

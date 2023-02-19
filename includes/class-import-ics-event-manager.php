@@ -25,8 +25,8 @@ class Import_Ics_Event_Manager {
 	protected $event_posttype;
 
 	// Current timeframe of consideration: 2 weeks < now < 1 year
-	protected $filterDaysBefore = 15;
-	protected $filterDaysAfter = 366;
+	protected $filterDaysBefore;
+	protected $filterDaysAfter;
 
 	/**
 	 * Initialize the class and set its properties.
@@ -35,19 +35,10 @@ class Import_Ics_Event_Manager {
 	 */
 	public function __construct() {
 
-		add_action('admin_init', array($this, 'setup_success_messages') );
+		$this->filterDaysBefore = get_option('import_ics_setting_interval_before') ?: 15;
+		$this->filterDaysAfter = get_option('import_ics_setting_interval_after') ?: 366;
 
 	}
-
-	/**
-	 * Register Session
-	 *
-	 * @since    1.0.0
-	 */
-	public function setup_success_messages() {
-		echo esc_html__( 'Hello world.', 'import-ics' );
-	}
-
 
 	/**
 	 * Process insert group form for TEC.

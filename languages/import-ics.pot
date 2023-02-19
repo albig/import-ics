@@ -49,7 +49,3 @@ msgstr ""
 #: admin/class-import-ics-admin.php:243
 msgid "Enter the ICS download links and configure the renewal interval."
 msgstr ""
-
-#: includes/class-import-ics-event-manager.php:48
-msgid "Hello world."
-msgstr ""
