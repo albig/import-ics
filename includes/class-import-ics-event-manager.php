@@ -145,6 +145,9 @@ class Import_Ics_Event_Manager {
 
 			$event_summary = [];
 			// we use the EM_DateTime object from event manager
+			if (!class_exists(EM_DateTime::class)) {
+				return false;
+			}
 			$em_start_datetime = new EM_DateTime($ical->iCalDateToUnixTimestamp($event->dtstart));
 			$em_end_datetime = new EM_DateTime($ical->iCalDateToUnixTimestamp($event->dtend));
 
@@ -191,18 +194,6 @@ class Import_Ics_Event_Manager {
 				update_post_meta($inserted_post_id, '_event_start_time', '00:00:00');
 			}
 
-			// if ( isset( $event->location ) ) {
-			// 	update_post_meta( $inserted_post_id, '_sunflower_event_location_name', $event->location );
-			// 	$coordinates = sunflower_geocode( $event->location );
-			// 	if ( $coordinates ) {
-			// 		list($lon, $lat) = $coordinates;
-			// 		update_post_meta( $inserted_post_id, '_sunflower_event_lat', $lat );
-			// 		update_post_meta( $inserted_post_id, '_sunflower_event_lon', $lon );
-			// 		$zoom = sunflower_get_constant( 'SUNFLOWER_EVENT_IMPORTED_ZOOM' ) ?: 12;
-			// 		update_post_meta( $inserted_post_id, '_sunflower_event_zoom', $zoom );
-			// 	}
-			// }
-
 			$categories  = (isset($event->categories)) ? $event->categories : '';
 			//$categories .= ( $auto_categories ) ? ',' . $auto_categories : '';
 
@@ -214,6 +205,11 @@ class Import_Ics_Event_Manager {
 			$inserted_event = get_post($inserted_post_id);
 			if (empty($inserted_event)) {
 				return false;
+			}
+
+			if (isset($event->location)) {
+				$location_id = $this->import_ics_location_event_manager($event, $inserted_post_id);
+				update_post_meta($inserted_post_id, '_location_id', $location_id);
 			}
 
 			// Custom table Details
@@ -231,7 +227,7 @@ class Import_Ics_Event_Manager {
 				'event_start_date' 	=> $event_summary['startDateTime']->getDate(),
 				'event_end_date'   	=> $event_summary['endDateTime']->getDate(),
 				'post_content' 	   	=> $inserted_event->post_content,
-				'location_id' 	   	=> $location_id,
+				'location_id' 	   	=> $location_id ?? 0,
 				'event_status' 	   	=> ($inserted_event->post_status == 'publish' ? 1 : 0),
 				'event_date_created'=> $inserted_event->post_date,
 			);
@@ -313,6 +309,107 @@ class Import_Ics_Event_Manager {
 			}
 		}
 		return $ids;
+	}
+
+	/**
+	 * Import locations to event manager
+	 *
+	 * @since    1.0.0
+	 */
+	private function import_ics_location_event_manager($event) {
+		global $wpdb;
+
+		$uid = $event->uid;
+
+		// is this location already imported
+		$is_imported = $this->get_location_by_title(strtolower($event->location));
+
+		$wp_id = 0;
+		$post_title = $event->location;
+
+		if ($is_imported->have_posts()) {
+			while ($is_imported->have_posts()){
+				$is_imported->the_post();
+				$post_title = get_the_title();
+				$wp_id = get_the_ID();
+			}
+		}
+
+		$post = array(
+			'ID' => $wp_id,
+			'post_type' => 'location',
+			'post_title' => $post_title,
+			'post_status' => 'publish',
+		);
+
+		$inserted_post_id = wp_insert_post((array) $post, true);
+
+		if (is_wp_error($inserted_post_id)) {
+			return false;
+		}
+
+		update_post_meta($inserted_post_id, '_importics_location_uid', strtolower($event->location));
+
+		$location_table = $wpdb->prefix . 'em_locations';
+
+		$inserted_location = get_post($inserted_post_id);
+		if (empty($inserted_location)) {
+			return false;
+		}
+
+		$location_array = array(
+			'post_id' 		   	=> $inserted_post_id,
+			'location_slug' 	=> $inserted_location->post_name,
+			'location_owner' 	=> $inserted_location->post_author,
+			'location_name'     => $inserted_location->post_title,
+			'location_address' 	=> '',
+			'location_town'   	=> '',
+			'location_state'    => '',
+			'location_postcode'	=> '',
+			'location_region'   => '',
+			'location_country'	=> '',
+			'location_latitude' => '',
+			'location_longitude' => '',
+			'post_content' 	   	=> $inserted_location->post_content,
+			'location_status' 	=> ($inserted_location->post_status == 'publish' ? 1 : 0),
+		);
+
+		// check for already existing location
+		$location_id = $wpdb->get_var('SELECT location_id FROM `' . $location_table . '` WHERE `post_id` = ' . absint($inserted_post_id));
+		if (is_numeric($location_id) && $location_id > 0) {
+			$where = array('post_id' => absint($inserted_post_id));
+			$wpdb->update($location_table, $location_array, $where);
+			update_post_meta($inserted_post_id, '_location_id', $location_id);
+		} else {
+			if ($wpdb->insert($location_table, $location_array)) {
+				$location_id = $wpdb->insert_id;
+				update_post_meta($inserted_post_id, '_location_id', $location_id);
+			}
+		}
+
+		return $location_id;
+	}
+
+	/**
+	 * Find the location post by
+	 *
+	 * @since    1.0.0
+	 */
+	private function get_location_by_title($title) {
+		return new WP_Query(
+			array(
+				'post_type' => 'location',
+				'meta_key' => '_importics_location_uid',
+				'orderby' => 'meta_value',
+				'meta_query' => array(
+					array(
+						'key' => '_importics_location_uid',
+						'value' => $title,
+						'compare' => '=',
+					),
+				),
+			)
+		);
 	}
 
 }
