@@ -17,6 +17,6 @@
 
 <h1>hello world - admin-display.php</h1>
 
-<div class="import-ics-container>
+<div class="import-ics-container">
 	<h3>comming soon...</h3>
 </div>

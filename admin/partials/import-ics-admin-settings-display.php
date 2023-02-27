@@ -23,6 +23,14 @@
         -->
     <?php settings_errors(); ?>
 
+    <?php
+    if (isset($_GET['settings-updated'])) {
+        if ($import_1_interval = get_option('import_ics_setting_1_interval')) {
+            set_transient('import_ics_event_manager_done', 1, $import_1_interval);
+        }
+    }
+    ?>
+
     <form method="POST" action="options.php">
         <?php
             settings_fields('import_ics_general_settings');
