@@ -203,6 +203,17 @@ class Import_Ics_Admin {
 		);
 
 		// import_ics_setting_1_interval
+		$select_options = array(
+			'3600' => esc_html__('1 Hour', 'import-ics'),
+			'7200' => esc_html__('2 Hours', 'import-ics'),
+			'43200' => esc_html__('12 Hours', 'import-ics'),
+			'86400' => esc_html__('24 Hours', 'import-ics'),
+		);
+
+		if (defined('WP_DEBUG') && WP_DEBUG) {
+			$select_options['2'] = esc_html__('Immediately (Development)', 'import-ics');
+		}
+
 		add_settings_field(
 			'import_ics_setting_1_interval',
 			esc_html__('Renew import interval', 'import-ics'),
@@ -214,13 +225,7 @@ class Import_Ics_Admin {
 				'subtype' => 'text',
 				'id' => 'import_ics_setting_1_interval',
 				'name' => 'import_ics_setting_1_interval',
-				'select_options' => array(
-					'2' =>  'development',
-					'3600' => esc_html__('1 Hour', 'import-ics'),
-					'7200' => esc_html__('2 Hours', 'import-ics'),
-					'43200' => esc_html__('12 Hours', 'import-ics'),
-					'86400' => esc_html__('24 Hours', 'import-ics'),
-				),
+				'select_options' => $select_options,
 				'default' => '43200',
 				'value_type'=>'normal',
 				'wp_data' => 'option',
