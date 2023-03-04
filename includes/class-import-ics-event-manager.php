@@ -115,22 +115,22 @@ class Import_Ics_Event_Manager {
 		global $wpdb;
 
 		$updated_events = 0;
+		$count_recurring_events = [];
 
 		foreach ($ical->events() as $event) {
 			$uid = $event->uid;
 
-			// if (isset($event->rrule)) {
-			// 	if ( isset( $count_recurring_events[ $uid ] ) ) {
-			// 		$count_recurring_events[ $uid ]++;
-			// 	} else {
-			// 		$count_recurring_events[ $uid ] = 1;
-			// 	}
-
-			// 	if ( $count_recurring_events[ $uid ] > $recurring_events_max ) {
-			// 		continue;
-			// 	}
-			// 	$uid .= '_' . $event->dtstart;
-			// }
+			if (isset($event->rrule)) {
+				// count / detect recurring events
+				if (isset($count_recurring_events[$uid])) {
+					$count_recurring_events[$uid]++;
+				} else {
+					$count_recurring_events[$uid] = 1;
+					// check and insert rrule event into wp_events_event
+					// tbd.
+				}
+				$uid .= '_' . $event->dtstart;
+			}
 
 			// is this event already imported
 			$is_imported = $this->get_event_by_uid($uid);
