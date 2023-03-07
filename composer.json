@@ -1,5 +1,5 @@
 {
     "require": {
-        "johngrogg/ics-parser": "^3"
+        "johngrogg/ics-parser": "^3.2"
     }
 }

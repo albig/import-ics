@@ -120,7 +120,7 @@ class Import_Ics_Event_Manager {
 		foreach ($ical->events() as $event) {
 			$uid = $event->uid;
 
-			if (isset($event->rrule)) {
+			if ($event->rrule) {
 				// count / detect recurring events
 				if (isset($count_recurring_events[$uid])) {
 					$count_recurring_events[$uid]++;
@@ -230,6 +230,7 @@ class Import_Ics_Event_Manager {
 				'location_id' 	   	=> $location_id ?? 0,
 				'event_status' 	   	=> ($inserted_event->post_status == 'publish' ? 1 : 0),
 				'event_date_created'=> $inserted_event->post_date,
+				'recurrence'		=> $event_summary['reccurence'] ?? 0
 			);
 
 			$event_table = $wpdb->prefix . 'em_events';
