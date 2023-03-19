@@ -207,6 +207,7 @@ class Import_Ics_Event_Manager {
 				return false;
 			}
 
+			$location_id = 0;
 			if (isset($event->location)) {
 				$location_id = $this->import_ics_location_event_manager($event, $inserted_post_id);
 				update_post_meta($inserted_post_id, '_location_id', $location_id);
