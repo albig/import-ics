@@ -88,7 +88,7 @@ class Import_Ics_Event_Manager {
 
 		}
 
-		$response = $this->import_ics_event_manager($ical);
+		$response = $this->import_ics_event_manager($ical, $import_ics_url_1);
 		$ids_from_remote = $response[0] ?? [];
 
 		$local_events_having_uid = $this->events_having_uid();
@@ -111,7 +111,7 @@ class Import_Ics_Event_Manager {
 	 *
 	 * @since    1.0.0
 	 */
-	private function import_ics_event_manager($ical) {
+	private function import_ics_event_manager($ical, $url) {
 		global $wpdb;
 
 		$updated_events = 0;
@@ -188,6 +188,10 @@ class Import_Ics_Event_Manager {
 			update_post_meta($inserted_post_id, '_event_end_local', $event_summary['endDateTime']->getDateTime());
 
 			update_post_meta($inserted_post_id, '_importics_event_uid', $uid);
+
+			// set some custom attributes
+			update_post_meta($inserted_post_id, 'Calendar Event ID', $uid);
+			update_post_meta($inserted_post_id, 'Source', $url);
 
 			if ($event_summary['isAllDay'] == true) {
 				update_post_meta($inserted_post_id, '_event_all_day', 1);
@@ -333,6 +337,7 @@ class Import_Ics_Event_Manager {
 			while ($is_imported->have_posts()){
 				$is_imported->the_post();
 				$post_title = get_the_title();
+				$post_content = get_the_content();
 				$wp_id = get_the_ID();
 			}
 		}
@@ -341,6 +346,7 @@ class Import_Ics_Event_Manager {
 			'ID' => $wp_id,
 			'post_type' => 'location',
 			'post_title' => $post_title,
+			'post_content' => $post_content,
 			'post_status' => 'publish',
 		);
 
@@ -364,14 +370,6 @@ class Import_Ics_Event_Manager {
 			'location_slug' 	=> $inserted_location->post_name,
 			'location_owner' 	=> $inserted_location->post_author,
 			'location_name'     => $inserted_location->post_title,
-			'location_address' 	=> '',
-			'location_town'   	=> '',
-			'location_state'    => '',
-			'location_postcode'	=> '',
-			'location_region'   => '',
-			'location_country'	=> '',
-			'location_latitude' => '',
-			'location_longitude' => '',
 			'post_content' 	   	=> $inserted_location->post_content,
 			'location_status' 	=> ($inserted_location->post_status == 'publish' ? 1 : 0),
 		);
