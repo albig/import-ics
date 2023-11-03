@@ -132,7 +132,7 @@ class Event
      *
      * @var array<string, mixed>
      */
-    private $additionalProperties = [];
+    private $additionalProperties = array();
 
     /**
      * Creates the Event object
@@ -160,12 +160,22 @@ class Event
      */
     public function __get($additionalPropertyName)
     {
-        $la  = $additionalPropertyName;
         if (array_key_exists($additionalPropertyName, $this->additionalProperties)) {
             return $this->additionalProperties[$additionalPropertyName];
         }
 
         return null;
+    }
+
+    /**
+     * Magic isset method
+     *
+     * @param  string $name
+     * @return boolean
+     */
+    public function __isset($name)
+    {
+        return is_null($this->$name) === false;
     }
 
     /**
