@@ -1,0 +1,35 @@
+{
+	"name": "import-ics",
+	"version": "1.0.0",
+	"description": "Import ICS",
+	"author": "Alexander Bigga",
+	"license": "GPL-2.0-or-later",
+	"keywords": [
+		"WordPress",
+		"calendar",
+		"ics",
+		"events"
+	],
+	"homepage": "https://github.com/albig/import-ics",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/albig/import-ics.git"
+	},
+	"bugs": {
+		"url": "https://github.com/albig/import-ics/issues"
+	},
+	"devDependencies": {
+		"@wordpress/scripts": "^27.5.0",
+		"@wordpress/stylelint-config": "^21.37.0",
+		"eslint-plugin-eslint-comments": "^3.2.0",
+		"node-sass": "^9.0.0"
+	},
+	"scripts": {
+		"lint:js": "wp-scripts lint-js 'js/*.js' 'src/**/*.js' 'assets/js/*.js'",
+		"lint:jsa": "wp-scripts lint-js",
+		"build": "wp-scripts build",
+		"start": "wp-scripts start",
+		"format": "wp-scripts format",
+		"packages-update": "wp-scripts packages-update"
+	}
+}
