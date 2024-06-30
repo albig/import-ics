@@ -1,5 +1,4 @@
 <?php
-
 /**
  * Define the internationalization functionality
  *
@@ -24,7 +23,7 @@
  * @subpackage Import_Ics/includes
  * @author     Alexander Bigga <alexander@bigga.de>
  */
-class Import_Ics_i18n {
+class Import_Ics_I18n {
 
 
 	/**
@@ -39,7 +38,5 @@ class Import_Ics_i18n {
 			false,
 			dirname( dirname( plugin_basename( __FILE__ ) ) ) . '/languages/'
 		);
-
 	}
-
 }
