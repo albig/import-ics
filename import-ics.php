@@ -1,5 +1,4 @@
 <?php
-
 /**
  * The plugin bootstrap file
  *
@@ -15,7 +14,7 @@
  * @wordpress-plugin
  * Plugin Name:       Import ICS Calendar
  * Plugin URI:        https://github.com/albig/import-ics
- * Description:       Import ICS calendar into wordpress database.
+ * Description:       Import ICS calendar into WordPress database.
  * Version:           1.0.0
  * Author:            Alexander Bigga
  * Author URI:        https://bigga.de
@@ -41,7 +40,7 @@ define( 'IMPORT_ICS_VERSION', '1.0.0' );
  * The code that runs during plugin activation.
  * This action is documented in includes/class-import-ics-activator.php
  */
-function activate_import_ics() {
+function import_ics_activate() {
 	require_once plugin_dir_path( __FILE__ ) . 'includes/class-import-ics-activator.php';
 	Import_Ics_Activator::activate();
 }
@@ -50,13 +49,13 @@ function activate_import_ics() {
  * The code that runs during plugin deactivation.
  * This action is documented in includes/class-import-ics-deactivator.php
  */
-function deactivate_import_ics() {
+function import_ics_deactivate() {
 	require_once plugin_dir_path( __FILE__ ) . 'includes/class-import-ics-deactivator.php';
 	Import_Ics_Deactivator::deactivate();
 }
 
-register_activation_hook( __FILE__, 'activate_import_ics' );
-register_deactivation_hook( __FILE__, 'deactivate_import_ics' );
+register_activation_hook( __FILE__, 'import_ics_activate' );
+register_deactivation_hook( __FILE__, 'import_ics_deactivate' );
 
 /**
  * The core plugin class that is used to define internationalization,
@@ -73,10 +72,9 @@ require plugin_dir_path( __FILE__ ) . 'includes/class-import-ics.php';
  *
  * @since    1.0.0
  */
-function run_import_ics() {
+function import_ics_run() {
 
 	$plugin = new Import_Ics();
 	$plugin->run();
-
 }
-run_import_ics();
+import_ics_run();

@@ -1,5 +1,4 @@
 <?php
-
 /**
  * The file that defines the core plugin class
  *
@@ -78,7 +77,6 @@ class Import_Ics {
 		$this->set_locale();
 		$this->define_admin_hooks();
 		$this->define_public_hooks();
-
 	}
 
 	/**
@@ -87,7 +85,7 @@ class Import_Ics {
 	 * Include the following files that make up the plugin:
 	 *
 	 * - Import_Ics_Loader. Orchestrates the hooks of the plugin.
-	 * - Import_Ics_i18n. Defines internationalization functionality.
+	 * - Import_Ics_I18n. Defines internationalization functionality.
 	 * - Import_Ics_Admin. Defines all hooks for the admin area.
 	 * - Import_Ics_Public. Defines all hooks for the public side of the site.
 	 *
@@ -103,38 +101,37 @@ class Import_Ics {
 		 * The class responsible for orchestrating the actions and filters of the
 		 * core plugin.
 		 */
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-import-ics-loader.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/class-import-ics-loader.php';
 
 		/**
 		 * The class responsible for defining internationalization functionality
 		 * of the plugin.
 		 */
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-import-ics-i18n.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/class-import-ics-i18n.php';
 
 		/**
 		 * The class responsible for defining all actions that occur in the admin area.
 		 */
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/class-import-ics-admin.php';
+		require_once plugin_dir_path( __DIR__ ) . 'admin/class-import-ics-admin.php';
 
 		/**
 		 * The class responsible for importing events into event manager structure.
 		 */
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-import-ics-event-manager.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/class-import-ics-event-manager.php';
 
 		/**
 		 * The class responsible for defining all actions that occur in the public-facing
 		 * side of the site.
 		 */
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'public/class-import-ics-public.php';
+		require_once plugin_dir_path( __DIR__ ) . 'public/class-import-ics-public.php';
 
 		$this->loader = new Import_Ics_Loader();
-
 	}
 
 	/**
 	 * Define the locale for this plugin for internationalization.
 	 *
-	 * Uses the Import_Ics_i18n class in order to set the domain and to register the hook
+	 * Uses the Import_Ics_I18n class in order to set the domain and to register the hook
 	 * with WordPress.
 	 *
 	 * @since    1.0.0
@@ -142,10 +139,9 @@ class Import_Ics {
 	 */
 	private function set_locale() {
 
-		$plugin_i18n = new Import_Ics_i18n();
+		$plugin_i18n = new Import_Ics_I18n();
 
 		$this->loader->add_action( 'plugins_loaded', $plugin_i18n, 'load_plugin_textdomain' );
-
 	}
 
 	/**
@@ -161,7 +157,6 @@ class Import_Ics {
 
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_styles' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
-
 	}
 
 	/**
@@ -178,6 +173,8 @@ class Import_Ics {
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts' );
 
+		$plugin_import_em = new Import_Ics_Event_Manager( $this->get_plugin_name(), $this->get_version() );
+		$this->loader->add_action( 'init', $plugin_import_em, 'activate_import_ics' );
 	}
 
 	/**
@@ -219,5 +216,4 @@ class Import_Ics {
 	public function get_version() {
 		return $this->version;
 	}
-
 }
